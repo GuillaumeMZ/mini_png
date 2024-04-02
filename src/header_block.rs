@@ -1,3 +1,5 @@
+use crate::binary_data::BinaryData;
+
 struct HeaderBlock {
     image_width: u32, //must be greater than 0
     image_height: u32, //ditto
