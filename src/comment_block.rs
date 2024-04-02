@@ -4,6 +4,7 @@ struct CommentBlock(String);
 
 impl BinaryData<CommentBlock> for CommentBlock {
     fn from_bytes(bytes: &[u8]) -> Result<CommentBlock, ()> {
+        //TODO: what should we do when bytes.len() == 0 ?
         let are_all_chars_representable = bytes.iter().all(|byte| *byte >= 33 && *byte <= 126);
         
         match are_all_chars_representable {
