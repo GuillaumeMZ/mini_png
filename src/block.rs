@@ -1,15 +1,21 @@
-use crate::{binary_data::BinaryData, comment_block::CommentBlock, header_block::HeaderBlock};
+use crate::{binary_data::BinaryData, comment_block::CommentBlock, header_block::HeaderBlock, data_block::DataBlock};
 
-enum BlockContent {
+pub enum BlockContent {
     Header(HeaderBlock),
     Comment(CommentBlock),
-    //Data()
+    Data(DataBlock)
 }
 
-struct Block {
-    block_type: u8,
-    block_length: u32,
-    content: BlockContent
+#[derive(PartialEq)]
+pub enum BlockType {
+    Header,
+    Comment,
+    Data
+}
+
+pub struct Block {
+    pub block_length: u32,
+    pub content: BlockContent
 }
 
 impl BinaryData<Block> for Block {
@@ -20,22 +26,20 @@ impl BinaryData<Block> for Block {
 
         let block_type = bytes[0];
         let block_length = u32::from_ne_bytes(bytes[1..=4].try_into().unwrap());
-        let content_bytes = &bytes[5..];
+        let content_bytes = bytes.get(5..5+block_length as usize).ok_or(())?;
         
         if !block_type.is_ascii() {
             return Err(());
         }
 
-        let block_type_char = block_type as char;
-        let content = match block_type_char {
-            'H' => BlockContent::Header(HeaderBlock::from_bytes(content_bytes).unwrap()), //TODO: safer unwraps ?
-            'C' => BlockContent::Comment(CommentBlock::from_bytes(content_bytes).unwrap()),
-            //'D' => B
+        let content = match block_type {
+            b'H' => BlockContent::Header(HeaderBlock::from_bytes(content_bytes)?),
+            b'C' => BlockContent::Comment(CommentBlock::from_bytes(content_bytes)?),
+            b'D' => BlockContent::Data(DataBlock::from_bytes(content_bytes)?),
             _ => { return Err(()); }
         };
 
         Ok(Block {
-            block_type,
             block_length,
             content
         })
@@ -45,15 +49,26 @@ impl BinaryData<Block> for Block {
         let mut result = Vec::new();
         
         let block_length_bytes = self.block_length.to_ne_bytes();
-        let content_bytes = match &self.content {
-            BlockContent::Header(header) => header.to_bytes().unwrap(), //TODO: return an error
-            BlockContent::Comment(comment) => comment.to_bytes().unwrap(),
+        let (content_type, content_bytes) = match &self.content {
+            BlockContent::Header(header) => (b'H', header.to_bytes().unwrap()), //TODO: return an error
+            BlockContent::Comment(comment) => (b'C', comment.to_bytes().unwrap()),
+            BlockContent::Data(data) => (b'D', data.to_bytes().unwrap()),
         };
 
-        result.insert(0, self.block_type);
+        result.insert(0, content_type);
         result.extend_from_slice(&block_length_bytes);
         result.extend_from_slice(&content_bytes);
 
         Ok(result)
+    }
+}
+
+impl Block {
+    pub fn get_type(&self) -> BlockType {
+        match self.content {
+            BlockContent::Header(_) => BlockType::Header,
+            BlockContent::Comment(_) => BlockType::Comment,
+            BlockContent::Data(_) => BlockType::Data
+        }
     }
 }
