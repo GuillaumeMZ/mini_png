@@ -13,8 +13,8 @@ impl BinaryData<HeaderBlock> for HeaderBlock {
         } else {
             //these will never fail because we know that bytes.len() == 9
             let first_four_bytes: [u8; 4] = bytes[0..=3].try_into().unwrap();
-            let next_four_bytes: [u8; 4] = bytes[4..=8].try_into().unwrap();
-            let last_byte = bytes[bytes.len() - 1];
+            let next_four_bytes: [u8; 4] = bytes[4..=7].try_into().unwrap();
+            let last_byte = bytes[8];
             
             let image_width = u32::from_ne_bytes(first_four_bytes); //TODO: endianess
             let image_height = u32::from_ne_bytes(next_four_bytes);
@@ -42,11 +42,11 @@ impl BinaryData<HeaderBlock> for HeaderBlock {
         let image_height_as_bytes = self.image_height.to_ne_bytes();
 
         for i in 0usize..4 {
-            result.insert(i, image_width_as_bytes[i]);
-            result.insert(i + 4, image_height_as_bytes[i]);
+            result[i] = image_width_as_bytes[i];
+            result[i + 4] = image_height_as_bytes[i];
         }
 
-        result.insert(8, self.pixel_type);
+        result[8] = self.pixel_type;
 
         Ok(result)
     }
