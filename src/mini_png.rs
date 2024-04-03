@@ -130,4 +130,11 @@ impl MiniPNG {
     pub fn get_pixel_type(&self) -> PixelType {
         self.header_block.get_pixel_type()
     }
+
+    pub fn get_comments(&self) -> Vec<String> {
+        self.comment_blocks.iter().map(|comment| {
+            let CommentBlock(comment) = comment;
+            comment.clone()
+        }).collect()
+    }
 }

@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 
 use crate::binary_data::BinaryData;
 
-pub struct CommentBlock(String);
+pub struct CommentBlock(pub String);
 
 impl BinaryData<CommentBlock> for CommentBlock {
     fn from_bytes(bytes: &[u8]) -> Result<CommentBlock> {
