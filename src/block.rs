@@ -27,7 +27,7 @@ impl BinaryData<Block> for Block {
         }
 
         let block_type = bytes[0];
-        let block_length = u32::from_ne_bytes(bytes[1..=4].try_into().unwrap()); //safe unwrap because we have 4 bytes
+        let block_length = u32::from_be_bytes(bytes[1..=4].try_into().unwrap()); //safe unwrap because we have 4 bytes
         let content_bytes = bytes.get(5..5+block_length as usize).ok_or(anyhow!("Unable to parse a block: there is a mismatch between block length and the actual number of bytes."))?;
         
         if !block_type.is_ascii() {

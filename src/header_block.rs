@@ -82,8 +82,8 @@ impl BinaryData<HeaderBlock> for HeaderBlock {
             let next_four_bytes: [u8; 4] = bytes[4..=7].try_into().unwrap();
             let last_byte = bytes[8];
             
-            let image_width = u32::from_ne_bytes(first_four_bytes); //TODO: endianess
-            let image_height = u32::from_ne_bytes(next_four_bytes);
+            let image_width = u32::from_be_bytes(first_four_bytes); //TODO: endianess
+            let image_height = u32::from_be_bytes(next_four_bytes);
 
             if image_width == 0 || image_height == 0 {
                 return Err(anyhow!("Unable to parse a header block: one (or both) of the image's dimension is (are) 0."));
