@@ -23,7 +23,7 @@ pub struct Block {
 impl BinaryData<Block> for Block {
     fn from_bytes(bytes: &[u8]) -> Result<Block> {
         if bytes.len() <= 5 {
-            return Err(anyhow!("Unable to parse a block: not enough bytes to store type + length.")); //not enough bytes
+            return Err(anyhow!("Unable to parse a block: not enough bytes to store type + length."));
         }
 
         let block_type = bytes[0];

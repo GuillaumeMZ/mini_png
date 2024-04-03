@@ -14,7 +14,7 @@ use crate::comment_block::CommentBlock;
 pub struct MiniPNG {
     header_block: HeaderBlock,
     comment_blocks: Vec<CommentBlock>,
-    data_blocks: Vec<DataBlock>, //one or more
+    data_blocks: Vec<DataBlock>, //one or more | TODO: only store the concatenation
 }
 
 impl MiniPNG {
@@ -47,69 +47,31 @@ impl MiniPNG {
         if header_block.get_type() != BlockType::Header {
             return Err(anyhow!("No header block found."));
         }
-
+        
         let header_block = match header_block.content {
             BlockContent::Header(header) => header,
             _ => unreachable!()
         };
         
-        //parse comment blocks (if any)
+        //parse comment/data blocks
         //TODO: refactor as a function
         let mut comment_blocks = Vec::<CommentBlock>::new();
-        
-        loop {
-            let comment_parse_result = MiniPNG::try_parse_block(bytes);
-            
-            if comment_parse_result.is_err() {
-                break;
-            }
-
-            let (block, next_bytes) = comment_parse_result.unwrap(); //safe unwrap
-            match block.content {
-                BlockContent::Comment(it) => { 
-                    bytes = next_bytes;
-                    comment_blocks.push(it); 
-                },
-                _ => { 
-                    break; 
-                }
-            }
-
-        }
-
-        //parse data blocks (at least one, fail if 0)
-        //TODO: refactor as a function
         let mut data_blocks = Vec::<DataBlock>::new();
-
-        let (first_data_block, mut bytes) = MiniPNG::try_parse_block(bytes)?;
         
-        match first_data_block.content {
-            BlockContent::Data(data) => { data_blocks.push(data); },
-            _ => { return Err(anyhow!("There should be at least one data block.")); }
-        }
-
         loop {
-            if bytes.len() == 0 {
-                break;
-                //EOF
-            }
+            let (block, next_bytes) = MiniPNG::try_parse_block(bytes)?;
 
-            let data_parse_result = MiniPNG::try_parse_block(bytes);
-
-            if data_parse_result.is_err() {
-                return Err(anyhow!("Unable to parse a block")); //TODO: use the parent error
-            }
-
-            let (block, next_bytes) = data_parse_result.unwrap(); //safe unwrap
             match block.content {
-                BlockContent::Data(it) => {
-                    bytes = next_bytes;
-                    data_blocks.push(it);
-                },
-                _ => {
-                    return Err(anyhow!("Unexpected block type in the data blocks section."));
-                }
+                BlockContent::Comment(it) => comment_blocks.push(it),
+                BlockContent::Data(it) => data_blocks.push(it),
+                _ => return Err(anyhow!("Error while parsing contents: unexpected header alongside the comments/data blocks."))
             }
+
+            if next_bytes.len() == 0 {
+                break;
+            }
+
+            bytes = next_bytes;
         }
 
         Ok(MiniPNG {
