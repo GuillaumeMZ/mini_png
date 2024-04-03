@@ -1,6 +1,6 @@
 use crate::binary_data::BinaryData;
 
-struct HeaderBlock {
+pub struct HeaderBlock {
     image_width: u32, //must be greater than 0
     image_height: u32, //ditto
     pixel_type: u8
@@ -23,7 +23,7 @@ impl BinaryData<HeaderBlock> for HeaderBlock {
                 return Err(()); //TODO: clearer error type
             }
 
-            if last_byte > 3 {
+            if last_byte > 3 { //change according to the supported pixel formats
                 return Err(()); //TODO: clearer error type
             }
 
@@ -41,7 +41,6 @@ impl BinaryData<HeaderBlock> for HeaderBlock {
         let image_width_as_bytes = self.image_width.to_ne_bytes();
         let image_height_as_bytes = self.image_height.to_ne_bytes();
 
-        //TODO: check for overflow
         for i in 0usize..4 {
             result.insert(i, image_width_as_bytes[i]);
             result.insert(i + 4, image_height_as_bytes[i]);
