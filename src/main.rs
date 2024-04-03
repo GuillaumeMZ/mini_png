@@ -18,7 +18,7 @@ fn main() {
     }
 
     let path = Path::new(&args[1]);
-    match commands::question2(path) {
+    match commands::question4(path) {
         Ok(_) => {},
         Err(error) => { eprintln!("Error while trying to parse the file: {}", error); }
     }

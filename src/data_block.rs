@@ -14,3 +14,10 @@ impl BinaryData<DataBlock> for DataBlock {
         self.0.clone()
     }
 }
+
+impl DataBlock {
+    pub fn contents(&self) -> Vec<u8> {
+        let DataBlock(contents) = self;
+        contents.clone()
+    }
+}
