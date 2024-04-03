@@ -1,3 +1,5 @@
+use anyhow::{anyhow, Result};
+
 use crate::{binary_data::BinaryData, comment_block::CommentBlock, header_block::HeaderBlock, data_block::DataBlock};
 
 pub enum BlockContent {
@@ -19,24 +21,24 @@ pub struct Block {
 }
 
 impl BinaryData<Block> for Block {
-    fn from_bytes(bytes: &[u8]) -> Result<Block, ()> {
+    fn from_bytes(bytes: &[u8]) -> Result<Block> {
         if bytes.len() <= 5 {
-            return Err(()); //not enough bytes
+            return Err(anyhow!("Unable to parse a block: not enough bytes to store type + length.")); //not enough bytes
         }
 
         let block_type = bytes[0];
-        let block_length = u32::from_ne_bytes(bytes[1..=4].try_into().unwrap());
-        let content_bytes = bytes.get(5..5+block_length as usize).ok_or(())?;
+        let block_length = u32::from_ne_bytes(bytes[1..=4].try_into().unwrap()); //safe unwrap because we have 4 bytes
+        let content_bytes = bytes.get(5..5+block_length as usize).ok_or(anyhow!("Unable to parse a block: there is a mismatch between block length and the actual number of bytes."))?;
         
         if !block_type.is_ascii() {
-            return Err(());
+            return Err(anyhow!("Unable to parse a block: its type is not a valid ASCII character (so it cannot be H, C or D)"));
         }
 
         let content = match block_type {
             b'H' => BlockContent::Header(HeaderBlock::from_bytes(content_bytes)?),
             b'C' => BlockContent::Comment(CommentBlock::from_bytes(content_bytes)?),
             b'D' => BlockContent::Data(DataBlock::from_bytes(content_bytes)?),
-            _ => { return Err(()); }
+            _ => { return Err(anyhow!("Unable to parse a block: its type is not one of H, C or D.")); }
         };
 
         Ok(Block {
@@ -45,21 +47,21 @@ impl BinaryData<Block> for Block {
         })
     }
 
-    fn to_bytes(&self) -> Result<Vec<u8>, ()> {
+    fn to_bytes(&self) -> Vec<u8> {
         let mut result = Vec::new();
         
         let block_length_bytes = self.block_length.to_ne_bytes();
         let (content_type, content_bytes) = match &self.content {
-            BlockContent::Header(header) => (b'H', header.to_bytes().unwrap()), //TODO: return an error
-            BlockContent::Comment(comment) => (b'C', comment.to_bytes().unwrap()),
-            BlockContent::Data(data) => (b'D', data.to_bytes().unwrap()),
+            BlockContent::Header(header) => (b'H', header.to_bytes()),
+            BlockContent::Comment(comment) => (b'C', comment.to_bytes()),
+            BlockContent::Data(data) => (b'D', data.to_bytes()),
         };
 
         result.insert(0, content_type);
         result.extend_from_slice(&block_length_bytes);
         result.extend_from_slice(&content_bytes);
 
-        Ok(result)
+        result
     }
 }
 

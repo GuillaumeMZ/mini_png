@@ -1,5 +1,6 @@
 use core::fmt;
-use std::fmt::write;
+
+use anyhow::{anyhow, Result};
 
 use crate::binary_data::BinaryData;
 
@@ -72,9 +73,9 @@ impl HeaderBlock {
 }
 
 impl BinaryData<HeaderBlock> for HeaderBlock {
-    fn from_bytes(bytes: &[u8]) -> Result<HeaderBlock, ()> {
+    fn from_bytes(bytes: &[u8]) -> Result<HeaderBlock> {
         if bytes.len() != 9 {
-            Err(()) //TODO: clearer error type
+            Err(anyhow!("Unable to parse a header block: not enough bytes to store width + height + pixel type."))
         } else {
             //these will never fail because we know that bytes.len() == 9
             let first_four_bytes: [u8; 4] = bytes[0..=3].try_into().unwrap();
@@ -85,11 +86,11 @@ impl BinaryData<HeaderBlock> for HeaderBlock {
             let image_height = u32::from_ne_bytes(next_four_bytes);
 
             if image_width == 0 || image_height == 0 {
-                return Err(()); //TODO: clearer error type
+                return Err(anyhow!("Unable to parse a header block: one (or both) of the image's dimension is (are) 0."));
             }
 
             if last_byte > 3 { //change according to the supported pixel formats
-                return Err(()); //TODO: clearer error type
+                return Err(anyhow!("Unable to parse a header block: {} is not a valid pixel format type.", last_byte));
             }
 
             Ok(HeaderBlock {
@@ -100,7 +101,7 @@ impl BinaryData<HeaderBlock> for HeaderBlock {
         }
     }
 
-    fn to_bytes(&self) -> Result<Vec<u8>, ()> {
+    fn to_bytes(&self) -> Vec<u8> {
         let mut result = Vec::with_capacity(9);
 
         let image_width_as_bytes = self.image_width.to_ne_bytes();
@@ -113,6 +114,6 @@ impl BinaryData<HeaderBlock> for HeaderBlock {
 
         result[8] = self.pixel_type.into();
 
-        Ok(result)
+        result
     }
 }

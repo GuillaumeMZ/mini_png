@@ -19,12 +19,10 @@ pub struct MiniPNG {
 
 impl MiniPNG {
     fn try_parse_block(bytes: &[u8]) -> Result<(Block, &[u8])> {
-        if let Ok(block) = Block::from_bytes(bytes) {
-            let remaining_bytes = &bytes[5 + block.block_length as usize..]; //safe slicing (TODO: why ?)
-            Ok((block, remaining_bytes))
-        } else {
-            Err(anyhow!("Block parsing failed."))
-        }
+        let block = Block::from_bytes(bytes)?;
+
+        let remaining_bytes = &bytes[5 + block.block_length as usize..]; //safe slicing (TODO: why ?)
+        Ok((block, remaining_bytes))
     }
 
     pub fn from_file(file_path: &Path) -> Result<MiniPNG> {
@@ -44,7 +42,8 @@ impl MiniPNG {
         }
         
         //parse header block (fail if it does not exist)
-        let (header_block, mut bytes) = MiniPNG::try_parse_block(bytes.as_slice())?;
+        let new_bytes = &bytes.as_slice()[8..];
+        let (header_block, mut bytes) = MiniPNG::try_parse_block(new_bytes)?;
         if header_block.get_type() != BlockType::Header {
             return Err(anyhow!("No header block found."));
         }
