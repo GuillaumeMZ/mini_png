@@ -4,7 +4,15 @@ use anyhow::{anyhow, Result};
 
 use crate::binary_data::BinaryData;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
+pub enum Pixel {
+    BlackAndWhite(bool), //true = white, false = black
+    Gray(u8),
+    Palette(u8),
+    TwentyFourBitsColors(u8, u8, u8)
+}
+
+#[derive(Clone, Copy, PartialEq)]
 pub enum PixelType {
     BlackAndWhite,
     GrayLevels,
@@ -52,6 +60,17 @@ impl fmt::Display for PixelType {
     }
 }
 
+impl PixelType {
+    pub fn size_in_bytes(&self) -> usize {
+        match self {
+            PixelType::BlackAndWhite => 1,
+            PixelType::GrayLevels => 1,
+            PixelType::Palette => 1,
+            PixelType::TwentyFourBitsColors => 3
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 pub struct HeaderBlock {
     image_width: u32, //must be greater than 0
@@ -94,7 +113,7 @@ impl BinaryData<HeaderBlock> for HeaderBlock {
         if last_byte > 3 { //change according to the supported pixel formats
             return Err(anyhow!("Unable to parse a header block: {} is not a valid pixel format type.", last_byte));
         }
-        
+
         Ok(HeaderBlock {
             image_width,
             image_height,

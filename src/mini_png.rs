@@ -8,13 +8,13 @@ use anyhow::{anyhow, Result};
 use crate::binary_data::BinaryData;
 use crate::block::{Block, BlockContent};
 use crate::data_block::DataBlock;
-use crate::header_block::{HeaderBlock, PixelType};
+use crate::header_block::{HeaderBlock, Pixel, PixelType};
 use crate::comment_block::CommentBlock;
 
 pub struct MiniPNG {
     header_block: HeaderBlock,
     comment_blocks: Vec<CommentBlock>,
-    data_blocks: Vec<DataBlock>, //one or more | TODO: only store the concatenation
+    pixels: Vec<Pixel>, //one or more | TODO: only store the concatenation
 }
 
 impl MiniPNG {
@@ -70,16 +70,36 @@ impl MiniPNG {
             return Err(anyhow!("Unable to parse the file: 1 header is expected, but {} were found.", headers_count));
         }
 
+        let header_block = header_blocks[0]; //safe access since we checked the size earlier
+
         if data_blocks.len() == 0{
             return Err(anyhow!("Unable to parse the file: no data block has been found."))
         }
 
-        //TODO: check that the number of pixels matches the specified dimensions of the image
+        let data_bytes: Vec<u8> = data_blocks.iter()
+                                             .map(|data_block| data_block.contents())
+                                             .flatten()
+                                             .collect();
+
+        let pixel_size_in_bytes = header_block.get_pixel_type().size_in_bytes();
+        //check that the number of pixels matches the specified dimensions of the image
+        if data_bytes.len() != header_block.get_image_width() as usize * header_block.get_image_height() as usize * pixel_size_in_bytes {
+            return Err(anyhow!("Error detected after parsing the file: the file size does not match the number of pixels parsed."));
+        }
+
+        let pixels = data_bytes.chunks(pixel_size_in_bytes).map(|chunk|
+            match header_block.get_pixel_type() {
+                PixelType::BlackAndWhite => Pixel::BlackAndWhite(chunk[0] == 1),
+                PixelType::GrayLevels => Pixel::Gray(chunk[0]),
+                PixelType::Palette => Pixel::Palette(chunk[0]),
+                PixelType::TwentyFourBitsColors => Pixel::TwentyFourBitsColors(chunk[0], chunk[1], chunk[2])
+            }
+        ).collect();
 
         Ok(MiniPNG {
-            header_block: header_blocks[0], //safe access since we checked the size earlier
+            header_block,
             comment_blocks,
-            data_blocks
+            pixels
         })
     }
 
@@ -103,6 +123,13 @@ impl MiniPNG {
     }
 
     pub fn get_pixel_at(&self, x: u32, y: u32) -> Option<Pixel> {
+        let image_width = self.get_image_width();
+        let image_height = self.get_image_height();
 
+        if x >= image_width || y >= image_height {
+            return None;
+        }
+
+        Some(self.pixels[(image_width * x + y) as usize])
     }
 }
