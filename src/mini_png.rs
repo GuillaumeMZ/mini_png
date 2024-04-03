@@ -41,20 +41,11 @@ impl MiniPNG {
             return Err(anyhow!("This file is not a valid MiniPNG file (magic mismatch)."));
         }
         
-        //parse header block (fail if it does not exist)
-        let new_bytes = &bytes.as_slice()[8..];
-        let (header_block, mut bytes) = MiniPNG::try_parse_block(new_bytes)?;
-        if header_block.get_type() != BlockType::Header {
-            return Err(anyhow!("No header block found."));
-        }
+        let mut bytes = &bytes.as_slice()[8..];
         
-        let header_block = match header_block.content {
-            BlockContent::Header(header) => header,
-            _ => unreachable!()
-        };
-        
-        //parse comment/data blocks
+        //parse blocks
         //TODO: refactor as a function
+        let mut header_blocks = Vec::<HeaderBlock>::new();
         let mut comment_blocks = Vec::<CommentBlock>::new();
         let mut data_blocks = Vec::<DataBlock>::new();
         
@@ -64,7 +55,7 @@ impl MiniPNG {
             match block.content {
                 BlockContent::Comment(it) => comment_blocks.push(it),
                 BlockContent::Data(it) => data_blocks.push(it),
-                _ => return Err(anyhow!("Error while parsing contents: unexpected header alongside the comments/data blocks."))
+                BlockContent::Header(it) => header_blocks.push(it)
             }
 
             if next_bytes.len() == 0 {
@@ -74,8 +65,17 @@ impl MiniPNG {
             bytes = next_bytes;
         }
 
+        let headers_count = header_blocks.len();
+        if headers_count != 1 {
+            return Err(anyhow!("Unable to parse the file: 1 header is expected, but {} were found.", headers_count));
+        }
+
+        if data_blocks.len() == 0{
+            return Err(anyhow!("Unable to parse the file: no data block has been found."))
+        }
+
         Ok(MiniPNG {
-            header_block,
+            header_block: *header_blocks.get(0).unwrap(), //safe unwrap since we checked the size earlier
             comment_blocks,
             data_blocks
         })
