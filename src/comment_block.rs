@@ -1,6 +1,6 @@
 use crate::binary_data::BinaryData;
 
-struct CommentBlock(String);
+pub struct CommentBlock(String);
 
 impl BinaryData<CommentBlock> for CommentBlock {
     fn from_bytes(bytes: &[u8]) -> Result<CommentBlock, ()> {
