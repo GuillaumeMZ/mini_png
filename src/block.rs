@@ -8,13 +8,6 @@ pub enum BlockContent {
     Data(DataBlock)
 }
 
-#[derive(PartialEq)]
-pub enum BlockType {
-    Header,
-    Comment,
-    Data
-}
-
 pub struct Block {
     pub block_length: u32,
     pub content: BlockContent
@@ -62,15 +55,5 @@ impl BinaryData<Block> for Block {
         result.extend_from_slice(&content_bytes);
 
         result
-    }
-}
-
-impl Block {
-    pub fn get_type(&self) -> BlockType {
-        match self.content {
-            BlockContent::Header(_) => BlockType::Header,
-            BlockContent::Comment(_) => BlockType::Comment,
-            BlockContent::Data(_) => BlockType::Data
-        }
     }
 }

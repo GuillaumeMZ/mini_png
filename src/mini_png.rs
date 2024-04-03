@@ -6,7 +6,7 @@ use std::path::Path;
 use anyhow::{anyhow, Result};
 
 use crate::binary_data::BinaryData;
-use crate::block::{Block, BlockContent, BlockType};
+use crate::block::{Block, BlockContent};
 use crate::data_block::DataBlock;
 use crate::header_block::{HeaderBlock, PixelType};
 use crate::comment_block::CommentBlock;
@@ -74,8 +74,10 @@ impl MiniPNG {
             return Err(anyhow!("Unable to parse the file: no data block has been found."))
         }
 
+        //TODO: check that the number of pixels matches the specified dimensions of the image
+
         Ok(MiniPNG {
-            header_block: *header_blocks.get(0).unwrap(), //safe unwrap since we checked the size earlier
+            header_block: header_blocks[0], //safe access since we checked the size earlier
             comment_blocks,
             data_blocks
         })
@@ -98,5 +100,9 @@ impl MiniPNG {
             let CommentBlock(comment) = comment;
             comment.clone()
         }).collect()
+    }
+
+    pub fn get_pixel_at(&self, x: u32, y: u32) -> Option<Pixel> {
+
     }
 }
