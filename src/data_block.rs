@@ -1,6 +1,6 @@
 use crate::binary_data::BinaryData;
 
-struct DataBlock(Vec<u8>);
+pub struct DataBlock(Vec<u8>);
 
 impl BinaryData<DataBlock> for DataBlock {
     fn from_bytes(bytes: &[u8]) -> Result<DataBlock, ()> {
