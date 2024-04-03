@@ -1,9 +1,74 @@
+use core::fmt;
+use std::fmt::write;
+
 use crate::binary_data::BinaryData;
+
+#[derive(Clone, Copy)]
+pub enum PixelType {
+    BlackAndWhite,
+    GrayLevels,
+    Palette,
+    TwentyFourBitsColors
+}
+
+impl TryFrom<u8> for PixelType {
+    type Error = ();
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        if value > 3 {
+            return Err(());
+        }
+
+        return Ok(match value {
+            0 => PixelType::BlackAndWhite,
+            1 => PixelType::GrayLevels,
+            2 => PixelType::Palette,
+            3 => PixelType::TwentyFourBitsColors,
+            _ => unreachable!()
+        });
+    }
+}
+
+impl From<PixelType> for u8 {
+    fn from(value: PixelType) -> Self {
+        match value {
+            PixelType::BlackAndWhite => 0,
+            PixelType::GrayLevels => 1,
+            PixelType::Palette => 2,
+            PixelType::TwentyFourBitsColors => 3
+        }
+    }
+}
+
+impl fmt::Display for PixelType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PixelType::BlackAndWhite => write!(f, "0 (Black and white)"),
+            PixelType::GrayLevels => write!(f, "1 (Gray levels)"),
+            PixelType::Palette => write!(f, "2 (Palette)"),
+            PixelType::TwentyFourBitsColors => write!(f, "3 (24 bits colors)")
+        }
+    }
+}
 
 pub struct HeaderBlock {
     image_width: u32, //must be greater than 0
     image_height: u32, //ditto
-    pixel_type: u8
+    pixel_type: PixelType
+}
+
+impl HeaderBlock {
+    pub fn get_image_width(&self) -> u32 {
+        self.image_width
+    }
+
+    pub fn get_image_height(&self) -> u32 {
+        self.image_height
+    }
+
+    pub fn get_pixel_type(&self) -> PixelType {
+        self.pixel_type
+    }
 }
 
 impl BinaryData<HeaderBlock> for HeaderBlock {
@@ -30,7 +95,7 @@ impl BinaryData<HeaderBlock> for HeaderBlock {
             Ok(HeaderBlock {
                 image_width,
                 image_height,
-                pixel_type: last_byte
+                pixel_type: last_byte.try_into().unwrap()
             })
         }
     }
@@ -46,7 +111,7 @@ impl BinaryData<HeaderBlock> for HeaderBlock {
             result[i + 4] = image_height_as_bytes[i];
         }
 
-        result[8] = self.pixel_type;
+        result[8] = self.pixel_type.into();
 
         Ok(result)
     }

@@ -8,7 +8,7 @@ use anyhow::{anyhow, Result};
 use crate::binary_data::BinaryData;
 use crate::block::{Block, BlockContent, BlockType};
 use crate::data_block::DataBlock;
-use crate::header_block::HeaderBlock;
+use crate::header_block::{HeaderBlock, PixelType};
 use crate::comment_block::CommentBlock;
 
 pub struct MiniPNG {
@@ -48,7 +48,7 @@ impl MiniPNG {
         if header_block.get_type() != BlockType::Header {
             return Err(anyhow!("No header block found."));
         }
-        
+
         let header_block = match header_block.content {
             BlockContent::Header(header) => header,
             _ => unreachable!()
@@ -118,5 +118,17 @@ impl MiniPNG {
             comment_blocks,
             data_blocks
         })
+    }
+
+    pub fn get_image_width(&self) -> u32 {
+        self.header_block.get_image_width()
+    }
+
+    pub fn get_image_height(&self) -> u32 {
+        self.header_block.get_image_height()
+    }
+
+    pub fn get_pixel_type(&self) -> PixelType {
+        self.header_block.get_pixel_type()
     }
 }
