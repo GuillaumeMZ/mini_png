@@ -2,7 +2,7 @@ use std::path::Path;
 
 use anyhow::{anyhow, Result};
 
-use crate::{header_block::{Pixel, PixelType}, mini_png::MiniPNG};
+use crate::{mini_png::MiniPNG, pixel::{Pixel, PixelType}};
 
 pub fn question4(file_path: &Path) -> Result<()> {
     let mini_png = MiniPNG::from_file(file_path)?;

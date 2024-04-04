@@ -1,11 +1,12 @@
 use anyhow::{anyhow, Result};
 
-use crate::{binary_data::BinaryData, comment_block::CommentBlock, header_block::HeaderBlock, data_block::DataBlock};
+use crate::{comment_block::CommentBlock, data_block::DataBlock, header_block::HeaderBlock, palette_block::PaletteBlock};
 
 pub enum BlockContent {
     Header(HeaderBlock),
     Comment(CommentBlock),
-    Data(DataBlock)
+    Data(DataBlock),
+    Palette(PaletteBlock)
 }
 
 pub struct Block {
@@ -13,8 +14,10 @@ pub struct Block {
     pub content: BlockContent
 }
 
-impl BinaryData<Block> for Block {
-    fn from_bytes(bytes: &[u8]) -> Result<Block> {
+impl TryFrom<&[u8]> for Block {
+    type Error = anyhow::Error;
+
+    fn try_from(bytes: &[u8]) -> Result<Block> {
         if bytes.len() <= 5 {
             return Err(anyhow!("Unable to parse a block: not enough bytes to store type + length."));
         }
@@ -28,9 +31,10 @@ impl BinaryData<Block> for Block {
         }
 
         let content = match block_type {
-            b'H' => BlockContent::Header(HeaderBlock::from_bytes(content_bytes)?),
-            b'C' => BlockContent::Comment(CommentBlock::from_bytes(content_bytes)?),
-            b'D' => BlockContent::Data(DataBlock::from_bytes(content_bytes)?),
+            b'H' => BlockContent::Header(HeaderBlock::try_from(content_bytes)?),
+            b'C' => BlockContent::Comment(CommentBlock::try_from(content_bytes)?),
+            b'D' => BlockContent::Data(DataBlock::try_from(content_bytes)?),
+            b'P' => BlockContent::Palette(PaletteBlock::try_from(content_bytes)?),
             _ => { return Err(anyhow!("Unable to parse a block: its type is not one of H, C or D.")); }
         };
 

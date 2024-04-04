@@ -5,21 +5,23 @@ use std::path::Path;
 
 use anyhow::{anyhow, Result};
 
-use crate::binary_data::BinaryData;
 use crate::block::{Block, BlockContent};
 use crate::data_block::DataBlock;
-use crate::header_block::{HeaderBlock, Pixel, PixelType};
+use crate::header_block::HeaderBlock;
 use crate::comment_block::CommentBlock;
+use crate::palette_block::PaletteBlock;
+use crate::pixel::{Pixel, PixelType};
 
 pub struct MiniPNG {
     header_block: HeaderBlock,
     comment_blocks: Vec<CommentBlock>,
+    palette_block: Option<PaletteBlock>,
     pixels: Vec<Pixel>,
 }
 
 impl MiniPNG {
     fn try_parse_block(bytes: &[u8]) -> Result<(Block, &[u8])> {
-        let block = Block::from_bytes(bytes)?;
+        let block = Block::try_from(bytes)?;
 
         let remaining_bytes = &bytes[5 + block.block_length as usize..]; //safe slicing (TODO: why ?)
         Ok((block, remaining_bytes))
@@ -34,6 +36,8 @@ impl MiniPNG {
             
             reader.read_to_end(&mut bytes)?;
         }
+
+        //TODO: check if there are enough bytes to store the magic string
         
         //check magic
         let magic_bytes = &bytes.as_slice()[0..=7];
@@ -48,14 +52,16 @@ impl MiniPNG {
         let mut header_blocks = Vec::<HeaderBlock>::new();
         let mut comment_blocks = Vec::<CommentBlock>::new();
         let mut data_blocks = Vec::<DataBlock>::new();
-        
+        let mut palette_blocks = Vec::<PaletteBlock>::new();
+
         loop {
             let (block, next_bytes) = MiniPNG::try_parse_block(bytes)?;
 
             match block.content {
                 BlockContent::Comment(it) => comment_blocks.push(it),
                 BlockContent::Data(it) => data_blocks.push(it),
-                BlockContent::Header(it) => header_blocks.push(it)
+                BlockContent::Header(it) => header_blocks.push(it),
+                BlockContent::Palette(it) => palette_blocks.push(it),
             }
 
             if next_bytes.len() == 0 {
@@ -76,8 +82,12 @@ impl MiniPNG {
             return Err(anyhow!("Unable to parse the file: no data block has been found."))
         }
 
+        if palette_blocks.len() >= 2 {
+            return Err(anyhow!("Unable to parse the file: there cannot be more than one palette block, but {} were found.", palette_blocks.len()));
+        }
+
         let data_bytes: Vec<u8> = data_blocks.iter()
-                                             .map(|data_block| data_block.contents())
+                                             .map(|data_block| data_block.get_bytes())
                                              .flatten()
                                              .collect();
 
@@ -87,11 +97,15 @@ impl MiniPNG {
             return Err(anyhow!("Error detected after parsing the file: the file size does not match the number of pixels parsed."));
         }
 
+        //TODO: do something if header says its a palette image but no palette block is found
+        //TODO: check all pixels exist in the palette
+
         let pixels = MiniPNG::process_pixels(pixel_type, data_bytes);
 
         Ok(MiniPNG {
             header_block,
             comment_blocks,
+            palette_block: if palette_blocks.len() == 1 { Some(palette_blocks[0].clone()) } else { None },
             pixels
         })
     }
@@ -152,10 +166,9 @@ impl MiniPNG {
     }
 
     pub fn get_comments(&self) -> Vec<String> {
-        self.comment_blocks.iter().map(|comment| {
-            let CommentBlock(comment) = comment;
-            comment.clone()
-        }).collect()
+        self.comment_blocks.iter()
+                           .map(|comment| comment.get_comment())
+                           .collect()
     }
 
     pub fn get_pixel_at(&self, x: u32, y: u32) -> Option<Pixel> {
@@ -167,5 +180,9 @@ impl MiniPNG {
         }
 
         Some(self.pixels[(image_width * x + y) as usize])
+    }
+
+    pub fn get_palette(&self) -> Option<PaletteBlock> {
+        self.palette_block.clone()
     }
 }

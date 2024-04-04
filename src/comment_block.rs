@@ -1,12 +1,11 @@
 use anyhow::{anyhow, Result};
 
-use crate::binary_data::BinaryData;
+pub struct CommentBlock(String);
 
-pub struct CommentBlock(pub String);
+impl TryFrom<&[u8]> for CommentBlock {
+    type Error = anyhow::Error;
 
-impl BinaryData<CommentBlock> for CommentBlock {
-    fn from_bytes(bytes: &[u8]) -> Result<CommentBlock> {
-        //TODO: what should we do when bytes.len() == 0 ?
+    fn try_from(bytes: &[u8]) -> Result<CommentBlock> {
         let are_all_chars_representable = bytes.iter().all(|byte| *byte >= 32 && *byte <= 127);
         
         if !are_all_chars_representable {
@@ -14,5 +13,11 @@ impl BinaryData<CommentBlock> for CommentBlock {
         }
         
         Ok(CommentBlock(String::from_utf8(bytes.to_vec()).unwrap())) //safe unwrap because all bytes are valid ASCII
+    }
+}
+
+impl CommentBlock {
+    pub fn get_comment(&self) -> String {
+        self.0.clone()
     }
 }

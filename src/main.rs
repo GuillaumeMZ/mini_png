@@ -1,9 +1,10 @@
 mod block;
-mod binary_data;
 mod header_block;
 mod comment_block;
 mod data_block;
+mod palette_block;
 mod mini_png;
+mod pixel;
 
 mod commands;
 
@@ -18,7 +19,7 @@ fn main() {
     }
 
     let path = Path::new(&args[1]);
-    match commands::question4(path) {
+    match commands::question8(path) {
         Ok(_) => {},
         Err(error) => { eprintln!("Error while trying to parse the file: {}", error); }
     }
