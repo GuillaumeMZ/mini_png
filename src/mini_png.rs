@@ -82,11 +82,10 @@ impl MiniPNG {
                                              .collect();
 
         let pixel_type = header_block.get_pixel_type();
-        //let pixel_size_in_bytes = pixel_type.size_in_bytes();
         //check that the number of pixels matches the specified dimensions of the image
-        // if data_bytes.len() != header_block.get_image_width() as usize * header_block.get_image_height() as usize * pixel_size_in_bytes {
-        //     return Err(anyhow!("Error detected after parsing the file: the file size does not match the number of pixels parsed."));
-        // }
+        if !MiniPNG::data_size_matches_image_size(header_block.get_image_width(), header_block.get_image_height(), data_bytes.len(), pixel_type) {
+            return Err(anyhow!("Error detected after parsing the file: the file size does not match the number of pixels parsed."));
+        }
 
         let pixels = MiniPNG::process_pixels(pixel_type, data_bytes);
 
@@ -95,6 +94,14 @@ impl MiniPNG {
             comment_blocks,
             pixels
         })
+    }
+
+    fn data_size_matches_image_size(image_width: u32, image_height: u32, bytes_count: usize, pixel_type: PixelType) -> bool {
+        match pixel_type {
+            PixelType::BlackAndWhite => ((image_width * image_height) as f32 / 8f32).ceil() as usize == bytes_count,
+            PixelType::GrayLevels | PixelType::Palette => (image_width * image_height) as usize == bytes_count,
+            PixelType::TwentyFourBitsColors => (image_width * image_height * 3) as usize == bytes_count
+        }
     }
 
     fn process_pixels(pixel_type: PixelType, pixels_bytes: Vec<u8>) -> Vec<Pixel> {
