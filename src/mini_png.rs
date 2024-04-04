@@ -81,26 +81,55 @@ impl MiniPNG {
                                              .flatten()
                                              .collect();
 
-        let pixel_size_in_bytes = header_block.get_pixel_type().size_in_bytes();
+        let pixel_type = header_block.get_pixel_type();
+        //let pixel_size_in_bytes = pixel_type.size_in_bytes();
         //check that the number of pixels matches the specified dimensions of the image
         // if data_bytes.len() != header_block.get_image_width() as usize * header_block.get_image_height() as usize * pixel_size_in_bytes {
         //     return Err(anyhow!("Error detected after parsing the file: the file size does not match the number of pixels parsed."));
         // }
 
-        let pixels = data_bytes.chunks(pixel_size_in_bytes).map(|chunk|
-            match header_block.get_pixel_type() {
-                PixelType::BlackAndWhite => Pixel::BlackAndWhite(chunk[0]),
-                PixelType::GrayLevels => Pixel::Gray(chunk[0]),
-                PixelType::Palette => Pixel::Palette(chunk[0]),
-                PixelType::TwentyFourBitsColors => Pixel::TwentyFourBitsColors(chunk[0], chunk[1], chunk[2])
-            }
-        ).collect();
+        let pixels = MiniPNG::process_pixels(pixel_type, data_bytes);
 
         Ok(MiniPNG {
             header_block,
             comment_blocks,
             pixels
         })
+    }
+
+    fn process_pixels(pixel_type: PixelType, pixels_bytes: Vec<u8>) -> Vec<Pixel> {
+        let mut result = Vec::new();
+
+        match pixel_type {
+            PixelType::BlackAndWhite => {
+                for pixel_byte in pixels_bytes {
+                    for i in (0..=7).rev() {
+                        if (pixel_byte >> i) & 1 == 1 {
+                            result.push(Pixel::White);
+                        } else {
+                            result.push(Pixel::Black);
+                        }
+                    }
+                }
+            },
+            PixelType::GrayLevels => {
+                for pixel_byte in pixels_bytes {
+                    result.push(Pixel::Gray(pixel_byte));
+                }
+            },
+            PixelType::Palette => {
+                for pixel_byte in pixels_bytes {
+                    result.push(Pixel::Palette(pixel_byte));
+                }
+            },
+            PixelType::TwentyFourBitsColors => {
+                for rgb in pixels_bytes.chunks(3) {
+                    result.push(Pixel::TwentyFourBitsColors(rgb[0], rgb[1], rgb[2]));
+                }
+            }
+        }
+
+        result
     }
 
     pub fn get_image_width(&self) -> u32 {
@@ -130,16 +159,6 @@ impl MiniPNG {
             return None;
         }
 
-        if self.get_pixel_type() == PixelType::BlackAndWhite {
-            let byte_index = (x * image_width + y) / 8; 
-            let bit_index = y % 8;
-            let shift_count = 8 - (bit_index + 1);
-
-            let Pixel::BlackAndWhite(byte) = self.pixels[byte_index as usize] else { unreachable!() };
-
-            Some(Pixel::BlackAndWhite((byte >> shift_count) & 1))
-        } else {
-            Some(self.pixels[(image_width * x + y) as usize])
-        }
+        Some(self.pixels[(image_width * x + y) as usize])
     }
 }

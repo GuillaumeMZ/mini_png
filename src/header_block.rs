@@ -4,9 +4,10 @@ use anyhow::{anyhow, Result};
 
 use crate::binary_data::BinaryData;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Pixel {
-    BlackAndWhite(u8),
+    Black,
+    White,
     Gray(u8),
     Palette(u8),
     TwentyFourBitsColors(u8, u8, u8)
