@@ -5,12 +5,12 @@ use std::path::Path;
 
 use anyhow::{anyhow, Result};
 
-use crate::block::{Block, BlockContent};
-use crate::data_block::DataBlock;
-use crate::header_block::HeaderBlock;
-use crate::comment_block::CommentBlock;
-use crate::palette_block::PaletteBlock;
-use crate::pixel::{Pixel, PixelType};
+use super::block::{Block, BlockContent};
+use super::data_block::DataBlock;
+use super::header_block::HeaderBlock;
+use super::comment_block::CommentBlock;
+use super::palette_block::PaletteBlock;
+use super::pixel::{Pixel, PixelType};
 
 pub struct MiniPNG {
     header_block: HeaderBlock,

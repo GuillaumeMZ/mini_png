@@ -2,9 +2,10 @@ use std::path::Path;
 
 use anyhow::{anyhow, Result};
 
-use crate::{mini_png::MiniPNG, pixel::{Pixel, PixelType}};
+use mini_png::mini_png::MiniPNG;
+use mini_png::pixel::{Pixel, PixelType};
 
-pub fn question4(file_path: &Path) -> Result<()> {
+fn answer(file_path: &Path) -> Result<()> {
     let mini_png = MiniPNG::from_file(file_path)?;
 
     let pixel_type = mini_png.get_pixel_type();
@@ -27,4 +28,22 @@ pub fn question4(file_path: &Path) -> Result<()> {
     }
 
     Ok(())
+}
+
+fn main() {
+    let args: Vec<String> = std::env::args().collect();
+    
+    if args.len() < 2 {
+        eprintln!("Not enough arguments: please provide the path of the file to parse.");
+        std::process::exit(1);
+    }
+
+    let path = Path::new(&args[1]);
+    match answer(path) {
+        Ok(_) => {},
+        Err(error) => { 
+            eprintln!("Error while trying to parse the file: {}", error); 
+            std::process::exit(1);
+        }
+    }
 }

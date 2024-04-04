@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 
-use crate::pixel::PixelType;
+use super::pixel::PixelType;
 
 #[derive(Clone, Copy)]
 pub struct HeaderBlock {
@@ -43,7 +43,7 @@ impl TryFrom<&[u8]> for HeaderBlock {
             return Err(anyhow!("Unable to parse a header block: one (or both) of the image's dimension is (are) 0."));
         }
 
-        if last_byte > 3 { //change according to the supported pixel formats
+        if last_byte > 3 {
             return Err(anyhow!("Unable to parse a header block: {} is not a valid pixel format type.", last_byte));
         }
 
