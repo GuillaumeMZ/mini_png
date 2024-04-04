@@ -6,7 +6,7 @@ use crate::binary_data::BinaryData;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Pixel {
-    BlackAndWhite(bool), //true = white, false = black
+    BlackAndWhite(u8),
     Gray(u8),
     Palette(u8),
     TwentyFourBitsColors(u8, u8, u8)

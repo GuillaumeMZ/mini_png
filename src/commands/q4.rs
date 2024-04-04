@@ -12,15 +12,15 @@ pub fn question4(file_path: &Path) -> Result<()> {
         return Err(anyhow!("Unable to display the image: this only works with black and white images, but this image is using {}.", pixel_type))
     }
 
-    for x in 0..mini_png.get_image_width() {
-        for y in 0..mini_png.get_image_height() {
+    for x in 0..mini_png.get_image_height() {
+        for y in 0..mini_png.get_image_width() {
             let pixel = mini_png.get_pixel_at(x, y).unwrap(); //safe unwrap since we cannot go out of bounds
             let is_white = match pixel {
                 Pixel::BlackAndWhite(is_white) => is_white,
                 _ => unreachable!()
             };
 
-            if !is_white {
+            if is_white == 0 {
                 print!("X");
             } else {
                 print!(" ");

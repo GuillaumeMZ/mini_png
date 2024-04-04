@@ -83,13 +83,13 @@ impl MiniPNG {
 
         let pixel_size_in_bytes = header_block.get_pixel_type().size_in_bytes();
         //check that the number of pixels matches the specified dimensions of the image
-        if data_bytes.len() != header_block.get_image_width() as usize * header_block.get_image_height() as usize * pixel_size_in_bytes {
-            return Err(anyhow!("Error detected after parsing the file: the file size does not match the number of pixels parsed."));
-        }
+        // if data_bytes.len() != header_block.get_image_width() as usize * header_block.get_image_height() as usize * pixel_size_in_bytes {
+        //     return Err(anyhow!("Error detected after parsing the file: the file size does not match the number of pixels parsed."));
+        // }
 
         let pixels = data_bytes.chunks(pixel_size_in_bytes).map(|chunk|
             match header_block.get_pixel_type() {
-                PixelType::BlackAndWhite => Pixel::BlackAndWhite(chunk[0] == 1),
+                PixelType::BlackAndWhite => Pixel::BlackAndWhite(chunk[0]),
                 PixelType::GrayLevels => Pixel::Gray(chunk[0]),
                 PixelType::Palette => Pixel::Palette(chunk[0]),
                 PixelType::TwentyFourBitsColors => Pixel::TwentyFourBitsColors(chunk[0], chunk[1], chunk[2])
@@ -126,10 +126,20 @@ impl MiniPNG {
         let image_width = self.get_image_width();
         let image_height = self.get_image_height();
 
-        if x >= image_width || y >= image_height {
+        if y >= image_width || x >= image_height {
             return None;
         }
 
-        Some(self.pixels[(image_width * x + y) as usize])
+        if self.get_pixel_type() == PixelType::BlackAndWhite {
+            let byte_index = (x * image_width + y) / 8; 
+            let bit_index = y % 8;
+            let shift_count = 8 - (bit_index + 1);
+
+            let Pixel::BlackAndWhite(byte) = self.pixels[byte_index as usize] else { unreachable!() };
+
+            Some(Pixel::BlackAndWhite((byte >> shift_count) & 1))
+        } else {
+            Some(self.pixels[(image_width * x + y) as usize])
+        }
     }
 }
