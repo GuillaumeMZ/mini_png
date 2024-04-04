@@ -1,7 +1,6 @@
 use std::path::Path;
 
 use anyhow::{anyhow, Result};
-use sdl2::pixels::Color;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use std::time::Duration;
@@ -19,9 +18,6 @@ pub fn display(image: &MiniPNG) -> Result<()> {
 
     let mut canvas = window.into_canvas().build().map_err(|err| anyhow!(err))?;
 
-    // canvas.set_draw_color(Color::RGB(0, 255, 255));
-    // canvas.clear();
-    // canvas.present();
     let mut event_pump = sdl_context.event_pump().map_err(|err| anyhow!(err))?;
 
     'running: loop {
