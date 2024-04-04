@@ -72,9 +72,7 @@ impl MiniPNG {
             return Err(anyhow!("Unable to parse the file: no data block has been found."))
         }
 
-        if palette_blocks.len() >= 2 {
-            return Err(anyhow!("Unable to parse the file: there cannot be more than one palette block, but {} were found.", palette_blocks.len()));
-        }
+        
 
         let data_bytes: Vec<u8> = data_blocks.iter()
                                              .map(|data_block| data_block.get_bytes())
@@ -87,10 +85,11 @@ impl MiniPNG {
             return Err(anyhow!("Error detected after parsing the file: the file size does not match the number of pixels parsed."));
         }
 
-        //TODO: do something if header says its a palette image but no palette block is found
-        //TODO: check all pixels exist in the palette
-
         let pixels = MiniPNG::process_pixels(pixel_type, data_bytes);
+
+        if pixel_type == PixelType::Palette {
+            MiniPNG::palette_consistency_checks(&palette_blocks, &pixels)?;
+        }
 
         Ok(MiniPNG {
             header_block,
@@ -129,6 +128,18 @@ impl MiniPNG {
         Some(self.pixels[(image_width * x + y) as usize])
     }
 
+    pub fn get_rgb_at(&self, x: u32, y: u32) -> Option<(u8, u8, u8)> {
+        MiniPNG::get_pixel_at(&self, x, y).map(|pixel| {
+            match pixel {
+                Pixel::Black => (0, 0, 0),
+                Pixel::White => (255, 255, 255),
+                Pixel::Gray(value) => (value, value, value),
+                Pixel::TwentyFourBitsColors(r, g, b) => (r, g, b),
+                Pixel::Palette(value) => self.get_palette().unwrap().entries()[value as usize]
+            }
+        })
+    }
+
     pub fn get_palette(&self) -> Option<PaletteBlock> {
         self.palette_block.clone()
     }
@@ -138,6 +149,28 @@ impl MiniPNG {
 
         let remaining_bytes = &bytes[5 + block.block_length as usize..]; //safe slicing
         Ok((block, remaining_bytes))
+    }
+
+    fn palette_consistency_checks(palette_blocks: &Vec<PaletteBlock>, pixels: &Vec<Pixel>) -> Result<()> {
+        if palette_blocks.len() >= 2 {
+            return Err(anyhow!("Unable to parse the file: there cannot be more than one palette block, but {} were found.", palette_blocks.len()));
+        }
+
+        if palette_blocks.len() == 0 {
+            return Err(anyhow!("Unable to parse the file: this file requires a palette, but none were found."));
+        }
+
+        let palette_entries_count = palette_blocks[0].entries().len(); //safe
+
+        //ensure that all the pixels exist within the palette
+        for pixel in pixels {
+            match pixel {
+                Pixel::Palette(value) => if *value as usize >= palette_entries_count { return Err(anyhow!("Error while trying to parse the pixels: the pixel {} does not exist in the palette.", value)); }
+                _ => unreachable!()
+            }
+        }
+
+        Ok(())
     }
 
     fn data_size_matches_image_size(image_width: u32, image_height: u32, bytes_count: usize, pixel_type: PixelType) -> bool {
