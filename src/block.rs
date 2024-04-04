@@ -39,21 +39,4 @@ impl BinaryData<Block> for Block {
             content
         })
     }
-
-    fn to_bytes(&self) -> Vec<u8> {
-        let mut result = Vec::new();
-        
-        let block_length_bytes = self.block_length.to_ne_bytes();
-        let (content_type, content_bytes) = match &self.content {
-            BlockContent::Header(header) => (b'H', header.to_bytes()),
-            BlockContent::Comment(comment) => (b'C', comment.to_bytes()),
-            BlockContent::Data(data) => (b'D', data.to_bytes()),
-        };
-
-        result.insert(0, content_type);
-        result.extend_from_slice(&block_length_bytes);
-        result.extend_from_slice(&content_bytes);
-
-        result
-    }
 }

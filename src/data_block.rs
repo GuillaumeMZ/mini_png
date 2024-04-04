@@ -9,10 +9,6 @@ impl BinaryData<DataBlock> for DataBlock {
         //TODO: what should we do when bytes.len() == 0 ?
         Ok(DataBlock(Vec::from(bytes)))
     }
-
-    fn to_bytes(&self) -> Vec<u8> {
-        self.0.clone()
-    }
 }
 
 impl DataBlock {

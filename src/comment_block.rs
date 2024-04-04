@@ -15,8 +15,4 @@ impl BinaryData<CommentBlock> for CommentBlock {
         
         Ok(CommentBlock(String::from_utf8(bytes.to_vec()).unwrap())) //safe unwrap because all bytes are valid ASCII
     }
-
-    fn to_bytes(&self) -> Vec<u8> {
-        self.0.clone().into_bytes()
-    }
 }

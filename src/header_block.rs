@@ -117,20 +117,4 @@ impl BinaryData<HeaderBlock> for HeaderBlock {
             pixel_type: last_byte.try_into().unwrap() //safe unwrap because we checked the value earlier
         })
     }
-
-    fn to_bytes(&self) -> Vec<u8> {
-        let mut result = Vec::with_capacity(9);
-
-        let image_width_as_bytes = self.image_width.to_ne_bytes();
-        let image_height_as_bytes = self.image_height.to_ne_bytes();
-
-        for i in 0usize..4 {
-            result[i] = image_width_as_bytes[i];
-            result[i + 4] = image_height_as_bytes[i];
-        }
-
-        result[8] = self.pixel_type.into();
-
-        result
-    }
 }
