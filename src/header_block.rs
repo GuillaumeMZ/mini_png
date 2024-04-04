@@ -22,20 +22,16 @@ pub enum PixelType {
 }
 
 impl TryFrom<u8> for PixelType {
-    type Error = ();
+    type Error = anyhow::Error;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
-        if value > 3 {
-            return Err(());
-        }
-
-        return Ok(match value {
+        Ok(match value {
             0 => PixelType::BlackAndWhite,
             1 => PixelType::GrayLevels,
             2 => PixelType::Palette,
             3 => PixelType::TwentyFourBitsColors,
-            _ => unreachable!()
-        });
+            _ => return Err(anyhow!("Unable to parse the pixel type: {} is not a valid pixel type.", value))
+        })
     }
 }
 

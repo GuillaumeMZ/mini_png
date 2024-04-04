@@ -14,7 +14,7 @@ use crate::comment_block::CommentBlock;
 pub struct MiniPNG {
     header_block: HeaderBlock,
     comment_blocks: Vec<CommentBlock>,
-    pixels: Vec<Pixel>, //one or more | TODO: only store the concatenation
+    pixels: Vec<Pixel>,
 }
 
 impl MiniPNG {
