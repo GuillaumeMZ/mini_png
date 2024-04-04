@@ -20,13 +20,6 @@ pub struct MiniPNG {
 }
 
 impl MiniPNG {
-    fn try_parse_block(bytes: &[u8]) -> Result<(Block, &[u8])> {
-        let block = Block::try_from(bytes)?;
-
-        let remaining_bytes = &bytes[5 + block.block_length as usize..]; //safe slicing (TODO: why ?)
-        Ok((block, remaining_bytes))
-    }
-
     pub fn from_file(file_path: &Path) -> Result<MiniPNG> {
         let mut bytes = Vec::<u8>::new();
         
@@ -36,19 +29,16 @@ impl MiniPNG {
             
             reader.read_to_end(&mut bytes)?;
         }
-
-        //TODO: check if there are enough bytes to store the magic string
         
         //check magic
-        let magic_bytes = &bytes.as_slice()[0..=7];
+        let magic_bytes = bytes.as_slice().get(0..=7).ok_or(anyhow!("Unable to parse the file: there are not enough bytes to store the header."))?;
         if magic_bytes != [b'M', b'i', b'n', b'i', b'-', b'P', b'N', b'G'] {
             return Err(anyhow!("This file is not a valid MiniPNG file (magic mismatch)."));
         }
-        
-        let mut bytes = &bytes.as_slice()[8..];
+
+        let mut bytes = bytes.as_slice().get(8..).ok_or(anyhow!("Unable to parse the file: there is nothing after the magic number."))?;
         
         //parse blocks
-        //TODO: refactor as a function
         let mut header_blocks = Vec::<HeaderBlock>::new();
         let mut comment_blocks = Vec::<CommentBlock>::new();
         let mut data_blocks = Vec::<DataBlock>::new();
@@ -110,6 +100,46 @@ impl MiniPNG {
         })
     }
 
+    pub fn get_image_width(&self) -> u32 {
+        self.header_block.get_image_width()
+    }
+
+    pub fn get_image_height(&self) -> u32 {
+        self.header_block.get_image_height()
+    }
+
+    pub fn get_pixel_type(&self) -> PixelType {
+        self.header_block.get_pixel_type()
+    }
+
+    pub fn get_comments(&self) -> Vec<String> {
+        self.comment_blocks.iter()
+                           .map(|comment| comment.get_comment())
+                           .collect()
+    }
+
+    pub fn get_pixel_at(&self, x: u32, y: u32) -> Option<Pixel> {
+        let image_width = self.get_image_width();
+        let image_height = self.get_image_height();
+
+        if y >= image_width || x >= image_height {
+            return None;
+        }
+
+        Some(self.pixels[(image_width * x + y) as usize])
+    }
+
+    pub fn get_palette(&self) -> Option<PaletteBlock> {
+        self.palette_block.clone()
+    }
+
+    fn try_parse_block(bytes: &[u8]) -> Result<(Block, &[u8])> {
+        let block = Block::try_from(bytes)?;
+
+        let remaining_bytes = &bytes[5 + block.block_length as usize..]; //safe slicing
+        Ok((block, remaining_bytes))
+    }
+
     fn data_size_matches_image_size(image_width: u32, image_height: u32, bytes_count: usize, pixel_type: PixelType) -> bool {
         match pixel_type {
             PixelType::BlackAndWhite => ((image_width * image_height) as f32 / 8f32).ceil() as usize == bytes_count,
@@ -151,38 +181,5 @@ impl MiniPNG {
         }
 
         result
-    }
-
-    pub fn get_image_width(&self) -> u32 {
-        self.header_block.get_image_width()
-    }
-
-    pub fn get_image_height(&self) -> u32 {
-        self.header_block.get_image_height()
-    }
-
-    pub fn get_pixel_type(&self) -> PixelType {
-        self.header_block.get_pixel_type()
-    }
-
-    pub fn get_comments(&self) -> Vec<String> {
-        self.comment_blocks.iter()
-                           .map(|comment| comment.get_comment())
-                           .collect()
-    }
-
-    pub fn get_pixel_at(&self, x: u32, y: u32) -> Option<Pixel> {
-        let image_width = self.get_image_width();
-        let image_height = self.get_image_height();
-
-        if y >= image_width || x >= image_height {
-            return None;
-        }
-
-        Some(self.pixels[(image_width * x + y) as usize])
-    }
-
-    pub fn get_palette(&self) -> Option<PaletteBlock> {
-        self.palette_block.clone()
     }
 }
