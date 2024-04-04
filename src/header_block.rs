@@ -35,17 +35,6 @@ impl TryFrom<u8> for PixelType {
     }
 }
 
-impl From<PixelType> for u8 {
-    fn from(value: PixelType) -> Self {
-        match value {
-            PixelType::BlackAndWhite => 0,
-            PixelType::GrayLevels => 1,
-            PixelType::Palette => 2,
-            PixelType::TwentyFourBitsColors => 3
-        }
-    }
-}
-
 impl fmt::Display for PixelType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -53,17 +42,6 @@ impl fmt::Display for PixelType {
             PixelType::GrayLevels => write!(f, "1 (Gray levels)"),
             PixelType::Palette => write!(f, "2 (Palette)"),
             PixelType::TwentyFourBitsColors => write!(f, "3 (24 bits colors)")
-        }
-    }
-}
-
-impl PixelType {
-    pub fn size_in_bytes(&self) -> usize {
-        match self {
-            PixelType::BlackAndWhite => 1,
-            PixelType::GrayLevels => 1,
-            PixelType::Palette => 1,
-            PixelType::TwentyFourBitsColors => 3
         }
     }
 }
